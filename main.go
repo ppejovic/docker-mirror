@@ -39,6 +39,10 @@ type ecrManager interface {
 	buildCacheBackoff() backoff.Operation
 }
 
+// originRegistry is an interface to the registry the images are pulled from; dockerhub, quay, gcr
+type originRegistry interface {
+}
+
 // Config is the result of the parsed yaml file
 type Config struct {
 	Cleanup      bool         `yaml:"cleanup"`
@@ -186,27 +190,43 @@ func main() {
 	log.Info("Done")
 }
 
+func createOriginRegistry(host string) (originRegistry, error) {
+	switch host {
+	case dockerHub:
+		//
+	case quay:
+		//
+	case gcr:
+		//
+	default:
+		return nil, fmt.Errorf("Unsupported host %s", host)
+	}
+}
+
 func worker(wg *sync.WaitGroup, workerCh chan Repository, dc *DockerClient, ecrm ecrManager) {
 	log.Debug("Starting worker")
 
 	for {
 		select {
 		case repo := <-workerCh:
-			// Check if the given host is from our support list.
-			if repo.Host != "" && repo.Host != dockerHub && repo.Host != quay && repo.Host != gcr {
-				log.Errorf("Could not pull images from host: %s. We support %s, %s and %s", repo.Host, dockerHub, quay, gcr)
-				wg.Done()
-				continue
-			}
 
 			// If Host is not specified, will mirror repos from Docker Hub.
 			if repo.Host == "" {
 				repo.Host = dockerHub
 			}
 
+			var registry originRegistry
+			registry, err := createOriginRegistry(repo.Host)
+			if err != nil {
+				log.Errorf("Could not pull images from host: %s", err.Error())
+				wg.Done()
+				continue
+			}
+
 			m := mirror{
-				dockerClient: dc,
-				ecrManager:   ecrm,
+				dockerClient:   dc,
+				ecrManager:     ecrm,
+				originRegistry: registry,
 			}
 			if err := m.setup(repo); err != nil {
 				log.Errorf("Failed to setup mirror for repository %s: %s", repo.Name, err)

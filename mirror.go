@@ -77,11 +77,12 @@ type DockerClient interface {
 }
 
 type mirror struct {
-	dockerClient *DockerClient   // docker client used to pull, tag and push images
-	ecrManager   ecrManager      // ECR manager, used to ensure the ECR repository exist
-	log          *log.Entry      // logrus logger with the relevant custom fields
-	repo         Repository      // repository the mirror
-	remoteTags   []RepositoryTag // list of remote repository tags (post filtering)
+	dockerClient   *DockerClient   // docker client used to pull, tag and push images
+	ecrManager     ecrManager      // ECR manager, used to ensure the ECR repository exist
+	originRegistry originRegistry  // Origin registry, used to interact with origin registry api
+	log            *log.Entry      // logrus logger with the relevant custom fields
+	repo           Repository      // repository the mirror
+	remoteTags     []RepositoryTag // list of remote repository tags (post filtering)
 }
 
 const defaultSleepDuration time.Duration = 60 * time.Second
